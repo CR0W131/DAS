@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de DAS (Simples Nacional)</title>
+    <!-- Carrega Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    // Definições de cores para o tema escuro
+                    colors: {
+                        'bg-dark': '#1f2937', // Fundo principal do card (Gray 800)
+                        'primary': '#3b82f6', // Azul brilhante para botões e destaque
+                        'accent': '#10b981',  // Verde para resultados importantes
+                        'text-light': '#f3f4f6', // Cor do texto claro
+                        'result-value': '#f97316', // Laranja para o valor final do DAS
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Fundo do corpo bem escuro (Gray 900) */
+        }
+        /* Estilo para campos de input no modo escuro */
+        input[type="number"], select {
+            background-color: #374151; /* Gray 700 */
+            color: #f3f4f6; /* light text */
+            border-color: #4b5563; /* Gray 600 */
+        }
+        input[type="number"]:focus, select:focus {
+            border-color: #3b82f6;
+            ring-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex justify-center items-start min-h-screen">
+
+    <div class="w-full max-w-3xl bg-bg-dark shadow-2xl rounded-xl p-6 sm:p-8 lg:p-10 border border-gray-700">
+        
+        <!-- Título da Empresa com o estilo do Simulador DAS (H1) -->
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-primary text-center mb-1">
+            GTK SOLUÇÕES EMPRESARIAIS
+        </h1>
+
+        <!-- Subtítulo do Simulador, agora usando H2 com o mesmo estilo para hierarquia -->
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-primary text-center mb-4">
+            Simulador DAS
+        </h2>
+        
+        <p class="text-gray-400 text-center mb-8">
+            Cálculo rápido da alíquota efetiva e valor do DAS (Simples Nacional).
+        </p>
+
+        <!-- Formulário de Entrada -->
+        <div class="space-y-6" id="inputForm">
+            <!-- Simples Nacional Check -->
+            <div class="bg-gray-700 border-l-4 border-primary p-4 rounded-lg">
+                <label class="block text-sm font-medium text-text-light mb-2">
+                    A sua empresa é optante pelo **Simples Nacional**?
+                </label>
+                <div class="flex space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="isSimples" value="sim" checked class="form-radio text-primary h-4 w-4 border-gray-500 bg-gray-600">
+                        <span class="ml-2 text-text-light">Sim</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="isSimples" value="nao" class="form-radio text-red-500 h-4 w-4 border-gray-500 bg-gray-600">
+                        <span class="ml-2 text-gray-400">Não</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Faturamento Bruto Acumulado (RBT12) -->
+            <div>
+                <label for="rbt12" class="block text-sm font-medium text-text-light">
+                    RBT12 (Faturamento dos Últimos 12 meses):
+                </label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-400 sm:text-sm">R$</span>
+                    </div>
+                    <input type="number" id="rbt12" placeholder="240000.00" class="focus:ring-primary focus:border-primary block w-full pl-10 pr-4 sm:text-sm rounded-md p-2.5 transition duration-150" value="240000">
+                </div>
+            </div>
+
+            <!-- Receita Bruta Mensal (RBM) -->
+            <div>
+                <label for="rbm" class="block text-sm font-medium text-text-light">
+                    RBM (Receita Bruta do Mês Atual):
+                </label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-400 sm:text-sm">R$</span>
+                    </div>
+                    <input type="number" id="rbm" placeholder="30000.00" class="focus:ring-primary focus:border-primary block w-full pl-10 pr-4 sm:text-sm rounded-md p-2.5 transition duration-150" value="30000">
+                </div>
+            </div>
+
+            <!-- Seleção do Anexo -->
+            <div>
+                <label for="anexo" class="block text-sm font-medium text-text-light">
+                    Selecione o Anexo (I a V):
+                </label>
+                <select id="anexo" class="mt-1 block w-full p-2.5 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary transition duration-150">
+                    <option value="I">Anexo I (Comércio)</option>
+                    <option value="II">Anexo II (Indústria)</option>
+                    <option value="III" selected>Anexo III (Serviços - Sem Fator R alto)</option>
+                    <option value="IV">Anexo IV (Serviços - IRPJ/PIS/COFINS)</option>
+                    <option value="V">Anexo V (Serviços - Com Fator R alto)</option>
+                </select>
+                <p class="mt-1 text-xs text-gray-500">
+                    *Verifique qual anexo se aplica à sua atividade.
+                </p>
+            </div>
+
+            <!-- Botão de Cálculo -->
+            <button id="calculateBtn" onclick="calcularDAS()" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-xl text-lg font-bold text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-bg-dark transition duration-200 ease-in-out">
+                Calcular Valor do DAS
+            </button>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div id="results" class="mt-8 hidden">
+            <h2 class="text-2xl font-bold text-text-light mb-4 border-b border-gray-700 pb-2">Resultado da Simulação</h2>
+            <div id="messageBox" class="p-4 rounded-lg mb-4 hidden" role="alert"></div>
+            
+            <div id="resultDetails" class="space-y-3">
+                
+                <!-- Faixa e Alíquotas -->
+                <div class="flex flex-wrap gap-4 text-sm font-medium text-gray-400">
+                    <p>Anexo: <span id="outAnexo" class="text-primary font-bold"></span></p>
+                    <p>Faixa: <span id="outFaixa" class="font-bold text-accent"></span></p>
+                    <p>RBT12: <span id="outRBT12" class="font-mono bg-gray-700 px-1 rounded text-text-light"></span></p>
+                </div>
+                
+                <hr class="border-gray-700">
+
+                <!-- Alíquota Efetiva -->
+                <div class="bg-gray-700 border-l-4 border-accent p-4 rounded-lg">
+                    <p class="text-xl font-bold text-text-light mb-2">
+                        Alíquota Efetiva Aplicada:
+                    </p>
+                    <p class="text-3xl text-accent font-extrabold">
+                        <span id="outAliquotaEfetiva"></span>
+                    </p>
+                    <p class="mt-2 text-xs text-gray-400">
+                        (Alíquota Nominal de <span id="outAliquotaNominal"></span> menos Parcela a Deduzir de <span id="outParcelaDeduzir"></span>, dividido pelo RBT12)
+                    </p>
+                </div>
+
+                <hr class="border-gray-700">
+
+                <!-- Valor Final do DAS -->
+                <div class="bg-gray-800 p-4 rounded-lg border-2 border-result-value">
+                    <p class="text-2xl text-text-light font-extrabold mb-1">
+                        Valor Estimado do DAS:
+                    </p>
+                    <p class="text-4xl font-extrabold text-result-value">
+                        <span id="outDASValue"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados das tabelas do Simples Nacional (Lei Complementar 123/2006, Anexos)
+        const SIMPLES_TABLES = {
+            'I': [ // Comércio
+                { limit: 180000.00, rate: 0.0400, deduction: 0.00 },
+                { limit: 360000.00, rate: 0.0730, deduction: 5940.00 },
+                { limit: 720000.00, rate: 0.0950, deduction: 13860.00 },
+                { limit: 1800000.00, rate: 0.1070, deduction: 22500.00 },
+                { limit: 3600000.00, rate: 0.1430, deduction: 82800.00 },
+                { limit: 4800000.00, rate: 0.1900, deduction: 378000.00 }
+            ],
+            'II': [ // Indústria
+                { limit: 180000.00, rate: 0.0450, deduction: 0.00 },
+                { limit: 360000.00, rate: 0.0780, deduction: 5940.00 },
+                { limit: 720000.00, rate: 0.1000, deduction: 13860.00 },
+                { limit: 1800000.00, rate: 0.1120, deduction: 22500.00 },
+                { limit: 3600000.00, rate: 0.1470, deduction: 85500.00 },
+                { limit: 4800000.00, rate: 0.3000, deduction: 720000.00 }
+            ],
+            'III': [ // Serviços 1 (Regra geral, ex: academias, escritórios de serviço, etc.)
+                { limit: 180000.00, rate: 0.0600, deduction: 0.00 },
+                { limit: 360000.00, rate: 0.1120, deduction: 9360.00 },
+                { limit: 720000.00, rate: 0.1350, deduction: 17640.00 },
+                { limit: 1800000.00, rate: 0.1600, deduction: 35640.00 },
+                { limit: 3600000.00, rate: 0.2100, deduction: 125640.00 },
+                { limit: 4800000.00, rate: 0.3300, deduction: 648000.00 }
+            ],
+            'IV': [ // Serviços 2 (Ex: construção de imóveis, serviços advocatícios, etc. - Sem inclusão de ISS/ICMS)
+                { limit: 180000.00, rate: 0.0450, deduction: 0.00 },
+                { limit: 360000.00, rate: 0.0900, deduction: 8100.00 },
+                { limit: 720000.00, rate: 0.1020, deduction: 12420.00 },
+                { limit: 1800000.00, rate: 0.1400, deduction: 39780.00 },
+                { limit: 3600000.00, rate: 0.2200, deduction: 183780.00 },
+                { limit: 4800000.00, rate: 0.3300, deduction: 828000.00 }
+            ],
+            'V': [ // Serviços 3 (Ex: engenharia, consultoria, etc. - Geralmente com Fator R baixo)
+                { limit: 180000.00, rate: 0.1550, deduction: 0.00 },
+                { limit: 360000.00, rate: 0.1800, deduction: 4500.00 },
+                { limit: 720000.00, rate: 0.1950, deduction: 10800.00 },
+                { limit: 1800000.00, rate: 0.2050, deduction: 17100.00 },
+                { limit: 3600000.00, rate: 0.2300, deduction: 62100.00 },
+                { limit: 4800000.00, rate: 0.3050, deduction: 540000.00 }
+            ]
+        };
+
+        // Função auxiliar para formatar números como moeda BRL
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+            }).format(value);
+        };
+
+        // Função auxiliar para formatar a alíquota como porcentagem
+        const formatPercentage = (value) => {
+            return (value * 100).toFixed(4).replace('.', ',') + '%';
+        };
+
+        // Função principal de cálculo do DAS
+        function calcularDAS() {
+            const isSimples = document.querySelector('input[name="isSimples"]:checked').value;
+            const rbt12Input = document.getElementById('rbt12').value;
+            const rbmInput = document.getElementById('rbm').value;
+            const anexo = document.getElementById('anexo').value;
+            const resultsDiv = document.getElementById('results');
+            const messageBox = document.getElementById('messageBox');
+            const resultDetails = document.getElementById('resultDetails');
+            
+            // Limpa resultados anteriores
+            resultsDiv.classList.add('hidden');
+            messageBox.classList.add('hidden');
+            messageBox.className = 'p-4 rounded-lg mb-4';
+            resultDetails.classList.add('hidden');
+
+            // 1. Verifica se é Simples Nacional
+            if (isSimples === 'nao') {
+                messageBox.textContent = 'Atenção: O cálculo do DAS se aplica apenas a empresas no regime do Simples Nacional.';
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('bg-red-900', 'border-red-600', 'text-red-300');
+                resultsDiv.classList.remove('hidden');
+                return;
+            }
+
+            // 2. Valida as entradas numéricas
+            const rbt12 = parseFloat(rbt12Input);
+            const rbm = parseFloat(rbmInput);
+
+            if (isNaN(rbt12) || rbt12 < 0 || isNaN(rbm) || rbm < 0) {
+                messageBox.textContent = 'Erro: Por favor, insira valores válidos e positivos para RBT12 e RBM.';
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('bg-red-900', 'border-red-600', 'text-red-300');
+                resultsDiv.classList.remove('hidden');
+                return;
+            }
+
+            // 3. Encontra a Faixa e Alíquotas
+            const table = SIMPLES_TABLES[anexo];
+            let faixa = null;
+            let faixaIndex = -1;
+
+            for (let i = 0; i < table.length; i++) {
+                // A última faixa cobre tudo acima do limite anterior até o teto do Simples (4.8kk)
+                if (rbt12 <= table[i].limit || i === table.length - 1) { 
+                    faixa = table[i];
+                    faixaIndex = i + 1;
+                    break;
+                }
+            }
+
+            if (!faixa) {
+                 // Caso o RBT12 seja maior que 4.8 milhões (limite do Simples Nacional)
+                messageBox.textContent = 'Atenção: O RBT12 excede o limite do Simples Nacional (R$ 4.800.000,00).';
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('bg-red-900', 'border-red-600', 'text-red-300');
+                resultsDiv.classList.remove('hidden');
+                return;
+            }
+
+            // 4. Cálculo da Alíquota Efetiva
+            const aliquotaNominal = faixa.rate;
+            const parcelaDeduzir = faixa.deduction;
+            
+            // Garante que o RBT12 não seja zero na divisão
+            const rbt12ForCalc = Math.max(0.01, rbt12); 
+
+            // Fórmula: (RBT12 * Alíquota Nominal - Parcela a Deduzir) / RBT12
+            const aliquotaEfetiva = ((rbt12ForCalc * aliquotaNominal) - parcelaDeduzir) / rbt12ForCalc;
+            
+            // 5. Cálculo do DAS (RBM * Alíquota Efetiva)
+            const valorDAS = rbm * aliquotaEfetiva;
+            
+            // 6. Exibição dos Resultados
+            document.getElementById('outAnexo').textContent = anexo;
+            document.getElementById('outRBT12').textContent = formatCurrency(rbt12);
+            document.getElementById('outFaixa').textContent = faixaIndex;
+            document.getElementById('outAliquotaNominal').textContent = formatPercentage(aliquotaNominal);
+            document.getElementById('outParcelaDeduzir').textContent = formatCurrency(parcelaDeduzir);
+            document.getElementById('outAliquotaEfetiva').textContent = formatPercentage(aliquotaEfetiva);
+            document.getElementById('outDASValue').textContent = formatCurrency(valorDAS);
+
+            resultDetails.classList.remove('hidden');
+            resultsDiv.classList.remove('hidden');
+            
+            // Mensagem de sucesso/aviso
+            messageBox.textContent = `Cálculo concluído para o Anexo ${anexo}.`;
+            messageBox.classList.remove('hidden');
+            messageBox.classList.add('bg-green-900', 'border-green-600', 'text-green-300');
+        }
+
+        // Chama o cálculo inicial ao carregar a página (com valores default)
+        window.onload = calcularDAS;
+    </script>
+</body>
+</html>
